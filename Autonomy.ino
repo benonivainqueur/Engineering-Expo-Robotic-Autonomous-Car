@@ -5,7 +5,7 @@ const int AIN2 = 12;            //control pin 2 on the motor driver for the righ
 const int PWMA = 11;            //speed control pin on the motor driver for the right motor
 
 //the left motor will be controlled by the motor B pins on the motor driver
-const int PWMB = 10;           //speed control pin on the motor driver for the left motor
+const int PWMB = 10.;           //speed control pin on the motor driver for the left motor
 const int BIN2 = 9;           //control pin 2 on the motor driver for the left motor
 const int BIN1 = 8;           //control pin 1 on the motor driver for the left motor
 
@@ -23,6 +23,10 @@ const int LtrigPin = 3;
 const int LechoPin=2;
 
 int switchPin = 0;             //switch to turn the robot on and off
+int redButton = SCL; 
+
+boolean Start=true;  
+  int i=0; 
 
 float distance = 0;            //variable to store the distance measured by the distance sensor
 float Rdistance=0;
@@ -32,8 +36,9 @@ float Ldistance=0;
 int backupTime = 300;           //amount of time that the robot will back up when it senses an object
 int turnTime = 200;             //amount that the robot will turn once it has backed up
 
-int LeftLo=100;
-int HiLo=250;
+const double carpetLeft=250*(.65);
+const double carpetRight=255*(.65);
+
 
 /********************************************************************************/
 void setup()
@@ -50,7 +55,7 @@ void setup()
  pinMode(LechoPin, INPUT);        //this pin will sense when the pulses reflect back to the distance sensor
 
   pinMode(switchPin, INPUT_PULLUP);   //set this as a pullup to sense whether the switch is flipped
-
+pinMode(redButton, INPUT_PULLUP);
 
   //set the motor control pins as outputs
   pinMode(AIN1, OUTPUT);
@@ -68,6 +73,8 @@ void setup()
 /********************************************************************************/
 void loop()
 {
+
+  
   //DETECT THE DISTANCE READ BY THE DISTANCE SENSOR
   distance = getDistance();
 Rdistance= RgetDistance();
@@ -80,30 +87,59 @@ Ldistance= LgetDistance();
    Serial.print(" Right Distance: ");
    Serial.print(Rdistance);
   Serial.println(" ");              // print the units
+if(digitalRead(redButton) == LOW)
+{
 
-  if(digitalRead(switchPin) == LOW)
+  i++;
+  if (i%2==0)
+  {
+     Start= false;
+  }
+  else
+  {
+    Start=true;
+  }
+ 
+}
+if(digitalRead(switchPin) )
   {  //if the on switch is flipped
 
-    if (Rdistance<10)
+    while (Rdistance<10)
     {
    //turn away from obstacle 
-      rightMotor(150);
-      leftMotor(-50);    
-      delay(150);
+      //rightMotor(150);
+    //  leftMotor(-50); 
+    rightMotor(carpetRight + (255/(4*Rdistance)));
+      Serial.println(carpetRight + (255/(4*Rdistance)));
+       leftMotor(100); 
+       delay(50);  
+      Rdistance= RgetDistance();
+    //  delay(150);
       Serial.println("Moving Left");
        
     }
-    if (Ldistance<10)
+    
+    while (Ldistance<10)
       {
+      
+     //  leftMotor(235);
+     //  rightMotor(100);
+      leftMotor( carpetLeft + (255/(4*Ldistance)));
+       rightMotor(100); 
+       delay(50);  
+      Ldistance= LgetDistance();
+   
    //turn away from obstacle 
-     rightMotor(100);
-     leftMotor(225);    
+     //rightMotor(250+Ldistance*15);
+    // leftMotor(235-Ldistance*15);    
      Serial.println("Moving Right");
-      delay(200);
+    // delay(170);
+      
      }
       
-    if(distance < 5 )
+    if(distance < 10 )
     {   
+     
       Serial.print(" ");
       Serial.print("BACK!");
 
@@ -113,32 +149,39 @@ Ldistance= LgetDistance();
       delay(400);
 
       //back up
-      rightMotor(-200);
-      leftMotor(-100);
-      delay(500);
-      
-     rightMotor(0);
+      rightMotor(-230);
+      leftMotor(-200);
+      delay(400);
+      rightMotor(0);
       leftMotor(0);
       delay(500);
-      //turn left and scan
-      rightMotor(150);
-      leftMotor(0);    
-      delay(500);
-       distance = getDistance();
-       if(distance<5)
-      {
-        rightMotor(0);
-       leftMotor(250); 
-       delay(600);
-      }
-
+      
+      Ldistance= LgetDistance();
+      Rdistance= RgetDistance();
+       if(Ldistance<Rdistance)
+       {
+        //turn right
+       leftMotor(255);
+       rightMotor(0);
+       delay(200);
+       }
+       if(Rdistance<Ldistance)
+       {
+        leftMotor(0);
+        rightMotor(255);
+        delay(150);
+       }
+      
+     
+ 
     }
 else
 {                         //if no obstacle is detected drive forward
       Serial.print(" ");
      Serial.print("Moving...");
-      rightMotor(150);
-      leftMotor(135);
+    
+   rightMotor(carpetRight-10);
+      leftMotor(carpetLeft+3);
     }
 
   } 
@@ -151,7 +194,7 @@ else
       leftMotor(0);
   }
 
-     delay(10);\
+     //delay(20);
      //wait 50 milliseconds between readings
 }
 
@@ -199,13 +242,14 @@ void leftMotor(int motorSpeed)                        //function for driving the
 
 /********************************************************************************/
 //RETURNS THE DISTANCE MEASURED 
+
 float getDistance()
 {
   float echoTime;                   //variable to store the time it takes for a ping to bounce off an object
   float calculatedDistance;         //variable to store the distance calculated from the echo time
   //send out an ultrasonic pulse that's 10ms long
   digitalWrite(trigPin, HIGH);
- delayMicroseconds(10);
+
   digitalWrite(trigPin, LOW);
   echoTime = pulseIn(echoPin, HIGH);      //use the pulsein command to see how long it takes for the
                                           //pulse to bounce back to the sensor
@@ -220,7 +264,7 @@ float RgetDistance()
   float RcalculatedDistance;
   //send out an ultrasonic pulse that's 10ms long
   digitalWrite(RtrigPin, HIGH);
- delayMicroseconds(10);
+
   digitalWrite(RtrigPin, LOW);
 
   RechoTime = pulseIn(RechoPin, HIGH);      //use the pulsein command to see how long it takes for the
